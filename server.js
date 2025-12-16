@@ -14,15 +14,15 @@ const app = express();
 
 /**
  * ===============================
- * ✅ MIDDLEWARE (ORDER MATTERS)
+ * ✅ MIDDLEWARE
  * ===============================
  */
 
-// ✅ CORS — ONLY ONCE (VERY IMPORTANT)
+// CORS (from env, not hardcoded)
 app.use(
   cors({
-    origin: "http://localhost:5173", // frontend URL
-    credentials: true,               // allow cookies
+    origin: process.env.CLIENT_URL,
+    credentials: true,
   })
 );
 
@@ -53,21 +53,29 @@ app.use("/api/user", userRoutes);
  */
 
 const PORT = process.env.PORT || 5000;
-const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/authdb";
 
-console.log("DEBUG: Using mongoUri =", mongoUri);
-console.log("DEBUG: CORS origin = http://localhost:5173");
+// ❌ FAIL FAST if env missing
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is missing");
+  process.exit(1);
+}
 
+if (!process.env.CLIENT_URL) {
+  console.error("❌ CLIENT_URL is missing");
+  process.exit(1);
+}
+
+// MongoDB connection (Atlas only, no localhost fallback)
 mongoose
-  .connect(mongoUri)
+  .connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("MongoDB connected");
+    console.log("✅ MongoDB connected");
 
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("DB connection error:", err.message || err);
+    console.error("❌ DB connection error:", err.message || err);
     process.exit(1);
   });
